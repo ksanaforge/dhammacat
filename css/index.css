@@ -1,0 +1,10 @@
+.CodeMirror , .cm-s-ambiance.CodeMirror {
+  line-height: 2.5em;
+  font-size:200%;
+  font-weight:200;
+  font-family: "Times New Roman","Microsoft JhengHei";
+}
+
+.translated {color:lightgreen}
+.sourcetext {position:absolute;top:-1.3em;font-size:75%;color:gray;
+font-weight: 500}
