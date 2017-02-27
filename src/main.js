@@ -12,13 +12,13 @@ const styles={
 }
 
 const text=require("./data").replace(/\r?\n/g,"\n");
-module.exports = observer(class Main extends React.Component{
+class Main extends React.Component{
 	render(){
 		return E("div",{style:styles.container},
 			local?E(DevTools):null,
-			E("div",{style:styles.left},E(MainEditor,{theme:"ambiance",text})),
-			E("div",{style:styles.right},E(Controls))
+			E("div",{style:styles.left},E(MainEditor,{theme:"ambiance",text,store:this.props.store})),
+			E("div",{style:styles.right},E(Controls,{store:this.props.store}))
 		)
 	}
-})
-
+};
+module.exports=Main;

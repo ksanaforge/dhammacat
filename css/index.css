@@ -5,7 +5,7 @@
   font-family: "Times New Roman","Microsoft JhengHei";
 }
 
-.translated {color:lightgreen}
+.translated {color:lightgreen;border-bottom:1px solid green;margin-left:10px;margin-right:10px;}
 .sourceword {position:absolute;top:-1.3em;font-size:75%;color:gray;
 font-weight: 500}
 .source{color:silver;border:1px dotted gray;}

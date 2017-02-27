@@ -4,6 +4,7 @@ const PT=React.PropTypes;
 const CodeMirror=require("ksana-codemirror").Component;
 const sourcetext=require("./sourcetext");
 const utils=require("./utils");
+const printStatus=require("./status");
 class TranslationEditor extends React.Component {
 	constructor(props){
 		super(props);
@@ -16,7 +17,9 @@ class TranslationEditor extends React.Component {
 		sourcetext.setSourceText(this.props.text);
 		sourcetext.markAllSourceText(this.cm);
 	}
-
+	onCursorActivity(cm){
+		printStatus(cm,store)
+	}
 	onBeforeChange(cm,chobj){
 		var cancel=true;
 		const f=chobj.from,t=chobj.to;
@@ -24,7 +27,9 @@ class TranslationEditor extends React.Component {
 			const translated=sourcetext.getTranslated(cm,cm.getCursor());
 			if (f.ch==t.ch) {
 				if (translated) {
-					if (f.ch>translated.find().from.ch)cancel=false;
+					if (f.ch>translated.find().from.ch&&f.ch<=translated.find().to.ch) {
+						cancel=false;
+					}
 				} else if (chobj.origin=="restore") {
 					const from=chobj.from;
 					setTimeout(()=>{
@@ -36,10 +41,12 @@ class TranslationEditor extends React.Component {
 				if (!translated) {
 					if (chobj.origin=="+input") {
 						const next={line:f.line,ch:f.ch+chobj.text[0].length}
-
-						sourcetext.addSourceTextMark(cm,f,t);
+						const sw=sourcetext.getSourceWord(cm,f,t);
+						const sp=sourcetext.getSourceTextPos(cm,f)
+						
+						sourcetext.breakSourceText(cm,f,t);
 						setTimeout(()=>{
-							cm.markText(f,next,{className:"translated",inclusiveRight:true});
+							sourcetext.markTranslated(cm,f,next,sw,sp);
 						},10);							
 						cancel=false;						
 					}
@@ -47,16 +54,26 @@ class TranslationEditor extends React.Component {
 					if (chobj.origin=="+delete") {
 						const m=translated.find();
 						if (utils.sameposition(m,chobj)) {
+							const source=translated.source;
+							const sourcepos=translated.sourcepos;
 							translated.clear();
-							const sourcetext=sourcetext.getSourceWordMarker(cm,f);
-							const at=sourcetext.find();
-							const text=sourcetext.widgetNode.children[0].innerHTML;
+							const at={line:m.from.line,ch:m.from.ch};
+							
+							
+							const lefttranslated=sourcetext.getTranslated(cm,chobj.from);
+							const tempt=sourcetext.saveTranslated(lefttranslated);
+							
 							setTimeout(()=>{
-								cm.replaceRange(text,at,at,"restore");
-								sourcetext.clear();
+								cm.replaceRange(source,at,at,"restore");
+								sourcetext.markSource(cm,at ,{line:at.line,ch:at.ch+source.length},sourcepos);
+								sourcetext.mergeSourceMarker(cm,at.line);
+								sourcetext.restoreTranslated(cm,tempt);
 							},10);
+							cancel=false;
 						}
-						cancel=false;
+						if (m.from.ch<=chobj.from.ch) {
+							cancel=false
+						}
 					}
 				}
 			}
@@ -68,7 +85,7 @@ class TranslationEditor extends React.Component {
 	  	E(CodeMirror,{ref:this.setCM.bind(this)
 	  	,value:this.props.text
 	  	,theme:this.props.theme
-  	  ,onCursorActivity:this.props.onCursorActivity
+  	  ,onCursorActivity:this.onCursorActivity.bind(this)
   	  ,onBeforeChange:this.onBeforeChange.bind(this)
   	  ,onFocus:this.props.onFocus
   	  ,onBlur:this.props.onBlur
