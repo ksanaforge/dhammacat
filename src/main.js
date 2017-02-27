@@ -11,7 +11,7 @@ const styles={
 	right:{flex:1}
 }
 
-const text=require("./data");
+const text=require("./data").replace(/\r?\n/g,"\n");
 module.exports = observer(class Main extends React.Component{
 	render(){
 		return E("div",{style:styles.container},

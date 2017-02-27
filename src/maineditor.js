@@ -2,43 +2,26 @@ const React=require("react");
 const E=React.createElement;
 const PT=React.PropTypes;
 const CodeMirror=require("ksana-codemirror").Component;
-
+const sourcetext=require("./sourcetext");
+const utils=require("./utils");
 class TranslationEditor extends React.Component {
+	constructor(props){
+		super(props);
+		this.state={sourceMarks:[]};
+	}
 	setCM(cm){
 		if (cm) this.cm=cm.getCodeMirror();
 	}
+	componentDidMount(){
+		sourcetext.setSourceText(this.props.text);
+		sourcetext.markAllSourceText(this.cm);
+	}
 
-	getSourceTextMarker(cm,at){
-		const marks=cm.findMarksAt(at).filter(
-			m=>m.widgetNode&&m.widgetNode.children[0].className=="sourcetext");
-		if (marks.length) return marks[0];
-	}
-	getTranslated(cm,at){
-		const marks=cm.findMarksAt(at).filter(m=>m.className=="translated");
-
-		if (marks.length) return marks[0];
-	}
-	getSourceText(from,to){
-		return this.props.text.substring(from,to);
-	}
-	addSourceTextMark(cm,pos,from,to){
-		const t=this.getSourceText(from,to);
-		const widget=document.createElement("span");
-		widget.innerHTML=t;
-		widget.className="sourcetext";
-		cm.setBookmark(pos,{widget,handleMouseEvents:true});
-	}
-	getTextPos(cm,linech){
-		return cm.indexFromPos(linech);
-	}
-	sameposition(p1,p2){
-		return p1.from.line==p2.from.line && p1.from.ch==p2.from.ch && p1.to.line==p2.from.line && p1.to.ch==p2.to.ch
-	}
 	onBeforeChange(cm,chobj){
 		var cancel=true;
 		const f=chobj.from,t=chobj.to;
 		if (f.line==t.line) {
-			const translated=this.getTranslated(cm,cm.getCursor());
+			const translated=sourcetext.getTranslated(cm,cm.getCursor());
 			if (f.ch==t.ch) {
 				if (translated) {
 					if (f.ch>translated.find().from.ch)cancel=false;
@@ -53,9 +36,8 @@ class TranslationEditor extends React.Component {
 				if (!translated) {
 					if (chobj.origin=="+input") {
 						const next={line:f.line,ch:f.ch+chobj.text[0].length}
-						const start=this.getTextPos(cm,f),end=this.getTextPos(cm,t);
 
-						this.addSourceTextMark(cm,f,start,end);
+						sourcetext.addSourceTextMark(cm,f,t);
 						setTimeout(()=>{
 							cm.markText(f,next,{className:"translated",inclusiveRight:true});
 						},10);							
@@ -64,9 +46,9 @@ class TranslationEditor extends React.Component {
 				} else {
 					if (chobj.origin=="+delete") {
 						const m=translated.find();
-						if (this.sameposition(m,chobj)) {
+						if (utils.sameposition(m,chobj)) {
 							translated.clear();
-							const sourcetext=this.getSourceTextMarker(cm,f);
+							const sourcetext=sourcetext.getSourceWordMarker(cm,f);
 							const at=sourcetext.find();
 							const text=sourcetext.widgetNode.children[0].innerHTML;
 							setTimeout(()=>{
